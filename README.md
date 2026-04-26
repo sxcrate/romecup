@@ -6,11 +6,12 @@ Sistema di controllo per rover mobile sviluppato dall'**IIS Enzo Ferrari di Roma
 
 ```
 ESP32-CAM
-   │  (ESP-NOW, chunk JPEG)
+   │  (stream RTMP)
+   ▼
+PC  ←→  ffmpeg  →  main.py (OpenCV + ArUco)
+   │  Serial 115200 baud — comandi ASCII (F B L R S)
    ▼
 ESP32 Trasmettitore  (sketch_mar17a.ino)
-   │  Serial 921600 baud — stream JPEG binario  →  PC
-   │  Serial 921600 baud — comandi ASCII (F B L R S)  ←  PC
    │  (ESP-NOW, 1 byte)
    ▼
 ESP32 Robot  (sketch_mar17b.ino)
@@ -19,7 +20,7 @@ ESP32 Robot  (sketch_mar17b.ino)
 Driver DRV8833  →  Motori
 ```
 
-Il PC esegue `main.py`, che riceve il video via RTMP (o, in futuro, direttamente dalla seriale), analizza i frame in tempo reale con OpenCV e invia comandi di movimento all'ESP32 trasmettitore.
+Il PC esegue `main.py`, che riceve il video via RTMP tramite `ffmpeg`, analizza i frame in tempo reale con OpenCV e invia comandi di movimento all'ESP32 trasmettitore tramite porta seriale (115200 baud).
 
 ## Descrizione
 
@@ -40,7 +41,7 @@ Il progetto consente di pilotare un rover tramite una telecamera e marker ArUco,
 | File | Descrizione |
 |---|---|
 | `main.py` | Script principale Python (PC) |
-| `sketch_mar17a.ino` | Firmware ESP32 trasmettitore (bridge CAM ↔ PC ↔ Robot) |
+| `sketch_mar17a.ino` | Firmware ESP32 trasmettitore (riceve comandi dal PC via seriale, li forward al robot via ESP-NOW) |
 | `sketch_mar17b.ino` | Firmware ESP32 robot (driver DRV8833, riceve comandi via ESP-NOW) |
 
 ## Requisiti
@@ -69,17 +70,14 @@ pip install opencv-python numpy pyserial ultralytics
 
 ### sketch_mar17a.ino — ESP32 Trasmettitore
 
-Prima di caricare il firmware, aggiornare i MAC address:
+Prima di caricare il firmware, aggiornare il MAC del ricevitore (robot):
 
 ```cpp
 // MAC del ricevitore (robot) — leggerlo dal monitor seriale di sketch_mar17b.ino
 uint8_t RECEIVER_MAC[] = {0xF0, 0x24, 0xF9, 0x43, 0x5E, 0x8C};
-
-// MAC della CAM — leggerlo dal monitor seriale dell'ESP32-CAM
-uint8_t CAM_MAC[] = {0xXX, 0xXX, 0xXX, 0xXX, 0xXX, 0xXX};
 ```
 
-Il baud rate seriale è impostato a **921600** per non fare da bottleneck al flusso video.
+Il baud rate seriale è **115200** baud, uguale a quello usato da `main.py`.
 
 ### sketch_mar17b.ino — ESP32 Robot
 
@@ -102,7 +100,7 @@ Al primo avvio, il monitor seriale stampa il MAC address del robot: copiarlo nel
 |---|---|---|
 | `PORT` | Porta seriale dell'ESP32 trasmettitore | `/dev/cu.usbserial-120` |
 | `BAUD` | Baud rate seriale | `115200` |
-| `RTMP_URL` | URL dello stream RTMP | `rtmp://172.20.10.2/live/drone` |
+| `RTMP_URL` | URL dello stream RTMP dalla ESP32-CAM | `rtmp://172.20.10.2/live/drone` |
 | `ANGLE_THRESHOLD` | Soglia angolo per lo sterzo (gradi) | `20` |
 | `Y_THRESHOLD` | Soglia verticale per avanti/indietro (px) | `160` |
 | `DURATA_COMANDO` | Durata comando standard (s) | `0.5` |
@@ -148,12 +146,6 @@ Comandi ASCII a singolo byte:
 | `R` | Destra |
 | `S` | Stop |
 
-### ESP32-CAM → ESP32 Trasmettitore → PC (flusso video)
+### ESP32-CAM → PC (flusso video)
 
-Il trasmettitore riassembla i chunk JPEG ricevuti via ESP-NOW dalla CAM e li invia al PC tramite protocollo seriale binario:
-
-```
-┌────────────────────────────────────────────────────┐
-│  0xAA  0xBB  │  len_hi  len_lo  │  JPEG...  │  0xCC  0xDD  │
-└────────────────────────────────────────────────────┘
-```
+La ESP32-CAM trasmette il video via **RTMP** direttamente al PC. `main.py` avvia `ffmpeg` in ascolto sull'URL configurato (`RTMP_URL`) e riceve i frame come rawvideo BGR24.
