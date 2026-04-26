@@ -5,7 +5,7 @@ Sistema di controllo per rover mobile sviluppato dall'**IIS Enzo Ferrari di Roma
 ## Architettura del sistema
 
 ```
-ESP32-CAM
+DJI neo
    │  (stream RTMP)
    ▼
 PC  ←→  ffmpeg  →  main.py (OpenCV + ArUco)
@@ -62,7 +62,7 @@ pip install opencv-python numpy pyserial ultralytics
 ### Hardware
 
 - ESP32 (trasmettitore) con connessione USB al PC
-- ESP32-CAM (sorgente video)
+- DJI NEO (sorgente video)
 - ESP32 (robot) collegato al driver DRV8833
 - Driver motori DRV8833
 
@@ -100,7 +100,7 @@ Al primo avvio, il monitor seriale stampa il MAC address del robot: copiarlo nel
 |---|---|---|
 | `PORT` | Porta seriale dell'ESP32 trasmettitore | `/dev/cu.usbserial-120` |
 | `BAUD` | Baud rate seriale | `115200` |
-| `RTMP_URL` | URL dello stream RTMP dalla ESP32-CAM | `rtmp://172.20.10.2/live/drone` |
+| `RTMP_URL` | URL dello stream RTMP dalla DJI NEO | `rtmp://172.20.10.2/live/drone` |
 | `ANGLE_THRESHOLD` | Soglia angolo per lo sterzo (gradi) | `20` |
 | `Y_THRESHOLD` | Soglia verticale per avanti/indietro (px) | `160` |
 | `DURATA_COMANDO` | Durata comando standard (s) | `0.5` |
@@ -112,7 +112,7 @@ Al primo avvio, il monitor seriale stampa il MAC address del robot: copiarlo nel
 1. Caricare `sketch_mar17b.ino` sull'ESP32 del robot e copiare il MAC address stampato sul monitor seriale.
 2. Aggiornare `RECEIVER_MAC` in `sketch_mar17a.ino` e caricarlo sull'ESP32 trasmettitore.
 3. Collegare l'ESP32 trasmettitore al PC tramite USB.
-4. Avviare lo stream RTMP dalla ESP32-CAM.
+4. Avviare lo stream RTMP dalla DJI NEO.
 5. Avviare lo script Python:
 
 ```bash
@@ -146,6 +146,6 @@ Comandi ASCII a singolo byte:
 | `R` | Destra |
 | `S` | Stop |
 
-### ESP32-CAM → PC (flusso video)
+### DJI NEO → PC (flusso video)
 
-La ESP32-CAM trasmette il video via **RTMP** direttamente al PC. `main.py` avvia `ffmpeg` in ascolto sull'URL configurato (`RTMP_URL`) e riceve i frame come rawvideo BGR24.
+La DJI NEO trasmette il video via **RTMP** direttamente al PC. `main.py` avvia `ffmpeg` in ascolto sull'URL configurato (`RTMP_URL`) e riceve i frame come rawvideo BGR24.
