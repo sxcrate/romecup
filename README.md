@@ -1,3 +1,4 @@
+![logo scuola](logo.png)
 # Controllo Rover ArUco - IIS Enzo Ferrari ROMA
 
 Sistema di controllo per rover mobile sviluppato dall'**IIS Enzo Ferrari di Roma** per la **Rome Cup**.
